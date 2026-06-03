@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>University GPA & S/U Options Calculator</title>
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            --primary-light: #3b82f6;
+            --secondary: #0f172a;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #334155;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            padding-bottom: 60px;
+            line-height: 1.5;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary) 0%, #2563eb 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-size: 24pt;
+            font-weight: 700;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        header p {
+            font-size: 11pt;
+            opacity: 0.9;
+        }
+
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 30px;
+        }
+
+        @media (max-width: 992px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            .sidebar {
+                position: relative !important;
+                top: 0 !important;
+                bottom: auto !important;
+                height: auto !important;
+            }
+        }
+
+        /* Smart Ambient Sticky Sidebar (No internal scrollbars) */
+        .sidebar {
+            position: sticky;
+            top: 20px;
+            bottom: 20px;
+            height: fit-content;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .dashboard-card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+
+        .gpa-display {
+            font-size: 42pt;
+            font-weight: 800;
+            color: var(--primary);
+            line-height: 1;
+            margin: 15px 0;
+        }
+
+        .gpa-label {
+            font-size: 10pt;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+        
+        .honors-badge {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 9.5pt;
+            font-weight: 700;
+            margin-bottom: 15px;
+            background-color: #f1f5f9;
+            color: var(--text-main);
+            transition: all 0.3s ease;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 15px;
+            border-top: 1px solid var(--border);
+            padding-top: 15px;
+        }
+
+        .stat-box {
+            text-align: left;
+        }
+
+        .stat-val {
+            font-size: 14pt;
+            font-weight: 700;
+            color: var(--secondary);
+        }
+
+        .stat-lbl {
+            font-size: 8.5pt;
+            color: var(--text-muted);
+        }
+
+        /* GitHub Button Styling */
+        .btn-github {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            background-color: #24292e;
+            color: white;
+            text-decoration: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 10pt;
+            width: 100%;
+            transition: background-color 0.2s, transform 0.1s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .btn-github:hover {
+            background-color: #1b1f23;
+        }
+
+        .btn-github:active {
+            transform: scale(0.98);
+        }
+
+        /* Chart Container */
+        .chart-container {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border);
+        }
+
+        .chart-title {
+            font-size: 11pt;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--secondary);
+            text-align: left;
+        }
+
+        .bar-chart {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            height: 140px;
+            padding-top: 20px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .bar-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            height: 100%;
+            justify-content: flex-end;
+            position: relative;
+        }
+
+        .bar {
+            width: 60%;
+            background-color: var(--primary-light);
+            border-radius: 4px 4px 0 0;
+            transition: height 0.5s ease, background-color 0.3s ease;
+            min-height: 2px;
+            cursor: pointer;
+        }
+
+        .bar:hover {
+            background-color: var(--primary);
+        }
+
+        .bar-tooltip {
+            position: absolute;
+            top: -20px;
+            font-size: 8pt;
+            font-weight: 700;
+            color: var(--primary);
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .bar-wrapper:hover .bar-tooltip {
+            opacity: 1;
+        }
+
+        .bar-label {
+            font-size: 7.5pt;
+            color: var(--text-muted);
+            margin-top: 8px;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        /* Main Content area */
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .year-section {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .year-header {
+            background-color: #f1f5f9;
+            padding: 16px 24px;
+            font-size: 14pt;
+            font-weight: 700;
+            color: var(--secondary);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .year-summary-badge {
+            font-size: 10pt;
+            background-color: var(--primary);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .semesters-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+            padding: 24px;
+        }
+
+        @media (min-width: 1200px) {
+            .semesters-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .semester-box {
+            background-color: #fafafa;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .semester-title-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 6px;
+        }
+
+        .semester-title {
+            font-size: 12pt;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .sem-gpa-badge {
+            font-size: 10.5pt;
+            font-weight: 700;
+            color: white;
+            background-color: var(--success);
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        /* Table Styling */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 12px;
+            font-size: 10pt;
+        }
+
+        th {
+            background-color: #f1f5f9;
+            color: var(--text-main);
+            font-weight: 600;
+            text-align: left;
+            padding: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 6px 8px;
+            border-bottom: 1px solid #edf2f7;
+            vertical-align: middle;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 10pt;
+            color: var(--text-main);
+        }
+
+        input[type="text"]:focus, select:focus {
+            outline: none;
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+
+        select {
+            width: 100%;
+            padding: 6px 4px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 10pt;
+            background-color: white;
+            color: var(--text-main);
+        }
+
+        /* Toggle Switch for S/U */
+        .su-toggle {
+            position: relative;
+            display: inline-block;
+            width: 42px;
+            height: 22px;
+        }
+
+        .su-toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #cbd5e1;
+            transition: .3s;
+            border-radius: 22px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--warning);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
+
+        .btn-delete {
+            background: none;
+            border: none;
+            color: var(--danger);
+            cursor: pointer;
+            font-size: 12pt;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+
+        .btn-delete:hover {
+            background-color: #fee2e2;
+        }
+
+        .btn-add {
+            background-color: #fff;
+            color: var(--primary);
+            border: 1px dashed var(--primary);
+            padding: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 9.5pt;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            margin-top: auto;
+        }
+
+        .btn-add:hover {
+            background-color: #eff6ff;
+            border-style: solid;
+        }
+
+        .sem-footer {
+            margin-top: 10px;
+            font-size: 9pt;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+            border-top: 1px dashed var(--border);
+            padding-top: 8px;
+        }
+
+        /* Top controls */
+        .global-controls {
+            max-width: 1300px;
+            margin: -10px auto 20px auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .btn-action {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 10pt;
+            cursor: pointer;
+            border: 1px solid var(--border);
+            background-color: white;
+            transition: all 0.2s;
+        }
+
+        .btn-action.secondary:hover {
+            background-color: #f1f5f9;
+        }
+
+        /* Reference Grade Table Card */
+        .grade-reference {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border);
+        }
+
+        .grade-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            font-size: 8.5pt;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .grade-badge {
+            background-color: #f1f5f9;
+            padding: 4px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .grade-badge span {
+            color: var(--text-muted);
+            font-weight: normal;
+            display: block;
+            font-size: 7.5pt;
+        }
+
+        .info-note {
+            background-color: #eff6ff;
+            border-left: 4px solid var(--primary-light);
+            padding: 12px 16px;
+            border-radius: 0 8px 8px 0;
+            font-size: 9.5pt;
+            margin-top: 15px;
+            color: #1e40af;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>NUS GPA/CPA Calculator with S/U</h1>
+        <p>GPA/CPA Calculator on a 5.0 scale with S/U functionality.</p>
+    </header>
+
+    <div class="global-controls">
+        <button class="btn-action secondary" onclick="clearAll()">Clear All Fields</button>
+    </div>
+
+    <div class="container">
+        <aside class="sidebar">
+            <div class="dashboard-card">
+                <div class="gpa-label">Cumulative GPA</div>
+                <div class="gpa-display" id="cum-gpa">0.00</div>
+                
+                <div class="honors-badge" id="honors-classification">Classification: —</div>
+                
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-val" id="total-gpa-credits">0</div>
+                        <div class="stat-lbl">GPA Credits</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-val" id="total-earned-credits">0</div>
+                        <div class="stat-lbl">Earned Credits</div>
+                    </div>
+                </div>
+                <div class="stats-grid" style="margin-top: 0; padding-top: 10px; border-top: none;">
+                    <div class="stat-box">
+                        <div class="stat-val" id="total-qp">0</div>
+                        <div class="stat-lbl">Quality Points</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-val" id="total-su-credits">0</div>
+                        <div class="stat-lbl">S/U Credits</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <div class="chart-title">GPA Trend Analysis</div>
+                <div class="bar-chart" id="trend-chart">
+                    </div>
+            </div>
+
+            <div class="grade-reference">
+                <div class="chart-title" style="margin-bottom: 5px;">Grade Scale Mapping</div>
+                <div class="grade-grid">
+                    <div class="grade-badge">A+ <span>5.0</span></div>
+                    <div class="grade-badge">A <span>5.0</span></div>
+                    <div class="grade-badge">A- <span>4.5</span></div>
+                    <div class="grade-badge">B+ <span>4.0</span></div>
+                    <div class="grade-badge">B <span>3.5</span></div>
+                    <div class="grade-badge">B- <span>3.0</span></div>
+                    <div class="grade-badge">C+ <span>2.5</span></div>
+                    <div class="grade-badge">C <span>2.0</span></div>
+                    <div class="grade-badge">D+ <span>1.5</span></div>
+                    <div class="grade-badge">D <span>1.0</span></div>
+                    <div class="grade-badge">F <span>0.0</span></div>
+                </div>
+            </div>
+
+            <div class="dashboard-card" style="padding: 14px;">
+                <a id="github-profile-btn" href="#" target="_blank" class="btn-github">
+                    <svg height="18" width="18" viewBox="0 0 16 16" version="1.1" aria-hidden="true" fill="currentColor"><path d="M8 0c4.42 0 8 3.58 8 8 0 3.54-2.29 6.53-5.47 7.59-.4.07-.55-.17-.55-.38 0-.19.01-.82.01-1.49 2.01.37 2.53-.49 2.69-.94.09-.23.48-.94.82-1.13.28-.15.68-.52.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
+                    <span>View on GitHub</span>
+                </a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <div id="years-container"></div>
+
+            <div class="info-note">
+                <strong>💡 S/U Option Rule:</strong> Enabling the S/U Option completely excludes that subject from the GPA calculation (0 Quality Points, 0 GPA Credits). However, if the subject is passed (Grade D or above), the credits will still count fully towards your <strong>Earned Credits</strong> requirement.
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // ==========================================
+        // CONFIGURATION: EDIT YOUR GITHUB LINK HERE
+        // ==========================================
+        const GITHUB_REPO_URL = "https://github.com/yourusername/gpa-su-calculator";
+
+        // Standard grade mapping
+        const GRADE_SCALE = {
+            'A+': 5.0, 'A': 5.0, 'A-': 4.5, 'B+': 4.0, 'B': 3.5, 'B-': 3.0,
+            'C+': 2.5, 'C': 2.0, 'D+': 1.5, 'D': 1.0, 'F': 0.0
+        };
+
+        // Unified first row placeholder configuration across all semesters
+        const PLACEHOLDERS = { name: "e.g. CS1010E", credits: "4" };
+
+        let appData = {};
+
+        // Initialize App
+        function init() {
+            // Apply configuration link to button element
+            const githubBtn = document.getElementById('github-profile-btn');
+            if (githubBtn) githubBtn.href = GITHUB_REPO_URL;
+
+            const saved = localStorage.getItem('university_gpa_su_data_v2');
+            if (saved) {
+                try {
+                    appData = JSON.parse(saved);
+                } catch(e) {
+                    generateBlankStructure();
+                }
+            } else {
+                generateBlankStructure();
+            }
+            renderStructure();
+            calculateGPA();
+        }
+
+        function generateBlankStructure() {
+            const keys = ["Y1_S1", "Y1_S2", "Y2_S1", "Y2_S2", "Y3_S1", "Y3_S2", "Y4_S1", "Y4_S2"];
+            keys.forEach(k => {
+                appData[k] = [];
+                // Initialize each semester with 4 clean blank records
+                for (let i = 0; i < 4; i++) {
+                    appData[k].push({ name: "", grade: "", credits: null, su: false });
+                }
+            });
+        }
+
+        function renderStructure() {
+            const container = document.getElementById('years-container');
+            container.innerHTML = '';
+
+            const structure = [
+                { id: 1, name: "Year 1", sems: [{ id: "S1", name: "Semester 1" }, { id: "S2", name: "Semester 2" }] },
+                { id: 2, name: "Year 2", sems: [{ id: "S1", name: "Semester 1" }, { id: "S2", name: "Semester 2" }] },
+                { id: 3, name: "Year 3", sems: [{ id: "S1", name: "Semester 1" }, { id: "S2", name: "Semester 2" }] },
+                { id: 4, name: "Year 4", sems: [{ id: "S1", name: "Semester 1" }, { id: "S2", name: "Semester 2" }] }
+            ];
+
+            structure.forEach(year => {
+                const yearDiv = document.createElement('section');
+                yearDiv.className = 'year-section';
+                yearDiv.id = `year-${year.id}`;
+
+                let headerHtml = `
+                    <div class="year-header">
+                        <span>${year.name}</span>
+                        <span class="year-summary-badge" id="year-${year.id}-gpa">Year GPA: —</span>
+                    </div>
+                    <div class="semesters-grid">
+                `;
+
+                year.sems.forEach(sem => {
+                    const semKey = `Y${year.id}_${sem.id}`;
+                    headerHtml += `
+                        <div class="semester-box" id="box-${semKey}">
+                            <div class="semester-title-bar">
+                                <span class="semester-title">${sem.name}</span>
+                                <span class="sem-gpa-badge" id="badge-${semKey}">—</span>
+                            </div>
+                            <table>
+                               <thead>
+                                   <tr>
+                                       <th style="width: 40%;">Module</th>
+                                       <th style="width: 20%;">Grade</th>
+                                       <th style="width: 18%;">Credits</th>
+                                       <th style="width: 12%; text-align: center;">S/U</th>
+                                       <th style="width: 10%;"></th>
+                                   </tr>
+                               </thead>
+                               <tbody id="tbody-${semKey}"></tbody>
+                            </table>
+                            <button class="btn-add" onclick="addModuleRow('${semKey}')">
+                                ➕ Add Module
+                            </button>
+                            <div class="sem-footer">
+                                <span id="footer-credits-${semKey}">GPA Credits: 0</span>
+                                <span id="footer-qp-${semKey}">QP: 0</span>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                headerHtml += `</div>`;
+                yearDiv.innerHTML = headerHtml;
+                container.appendChild(yearDiv);
+
+                // Populate rows
+                year.sems.forEach(sem => {
+                    const semKey = `Y${year.id}_${sem.id}`;
+                    const modules = appData[semKey] || [];
+                    modules.forEach((m, index) => insertRowDOM(semKey, m, index));
+                });
+            });
+        }
+
+        function insertRowDOM(semKey, moduleObj, index) {
+            const tbody = document.getElementById(`tbody-${semKey}`);
+            const tr = document.createElement('tr');
+            
+            let gradeOptions = '<option value="">—</option>';
+            Object.keys(GRADE_SCALE).forEach(g => {
+                const selected = moduleObj.grade === g ? 'selected' : '';
+                gradeOptions += `<option value="${g}" ${selected}>${g}</option>`;
+            });
+
+            // Fallback empty text; apply shared config example exclusively on index 0
+            let namePlaceholder = "";
+            let creditPlaceholder = "";
+            
+            if (index === 0) {
+                namePlaceholder = PLACEHOLDERS.name;
+                creditPlaceholder = PLACEHOLDERS.credits;
+            }
+
+            tr.innerHTML = `
+                <td><input type="text" value="${moduleObj.name || ''}" placeholder="${namePlaceholder}" oninput="updateRowData('${semKey}', this, 'name')"></td>
+                <td>
+                    <select onchange="updateRowData('${semKey}', this, 'grade')">
+                        ${gradeOptions}
+                    </select>
+                </td>
+                <td><input type="text" value="${moduleObj.credits !== null && moduleObj.credits !== undefined ? moduleObj.credits : ''}" placeholder="${creditPlaceholder}" style="text-align: center;" oninput="updateRowData('${semKey}', this, 'credits')"></td>
+                <td style="text-align: center;">
+                    <label class="su-toggle">
+                        <input type="checkbox" ${moduleObj.su ? 'checked' : ''} onchange="updateRowData('${semKey}', this, 'su')">
+                        <span class="slider"></span>
+                    </label>
+                </td>
+                <td>
+                    <button class="btn-delete" onclick="deleteRowDOM(this, '${semKey}')" title="Remove Module">🗑️</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        }
+
+        function addModuleRow(semKey) {
+            if (!appData[semKey]) appData[semKey] = [];
+            const newObj = { name: "", grade: "", credits: null, su: false };
+            appData[semKey].push(newObj);
+            insertRowDOM(semKey, newObj, appData[semKey].length - 1);
+            saveToLocalStorage();
+            calculateGPA();
+        }
+
+        function deleteRowDOM(button, semKey) {
+            const tr = button.closest('tr');
+            const tbody = document.getElementById(`tbody-${semKey}`);
+            const index = Array.from(tbody.children).indexOf(tr);
+            
+            if (index > -1) {
+                appData[semKey].splice(index, 1);
+                renderStructure(); // Structure re-evaluation naturally adjusts placeholders to point to index 0
+                saveToLocalStorage();
+                calculateGPA();
+            }
+        }
+
+        function updateRowData(semKey, element, field) {
+            const tr = element.closest('tr');
+            const tbody = document.getElementById(`tbody-${semKey}`);
+            const index = Array.from(tbody.children).indexOf(tr);
+            
+            if (index > -1) {
+                let val = element.value;
+                if (field === 'su') {
+                    val = element.checked;
+                } else if (field === 'credits') {
+                    val = val.trim() === '' ? null : parseFloat(val);
+                }
+                appData[semKey][index][field] = val;
+                saveToLocalStorage();
+                calculateGPA();
+            }
+        }
+
+        function calculateGPA() {
+            let totalQP = 0;
+            let totalGPACredits = 0;
+            let totalGradCredits = 0;
+            let totalSUCredits = 0;
+
+            const trendData = [];
+            const yearTotals = { 1: { qp: 0, credits: 0 }, 2: { qp: 0, credits: 0 }, 3: { qp: 0, credits: 0 }, 4: { qp: 0, credits: 0 } };
+
+            const semestersKeys = [
+                { key: "Y1_S1", lbl: "Y1 S1", yr: 1 }, { key: "Y1_S2", lbl: "Y1 S2", yr: 1 },
+                { key: "Y2_S1", lbl: "Y2 S1", yr: 2 }, { key: "Y2_S2", lbl: "Y2 S2", yr: 2 },
+                { key: "Y3_S1", lbl: "Y3 S1", yr: 3 }, { key: "Y3_S2", lbl: "Y3 S2", yr: 3 },
+                { key: "Y4_S1", lbl: "Y4 S1", yr: 4 }, { key: "Y4_S2", lbl: "Y4 S2", yr: 4 }
+            ];
+
+            semestersKeys.forEach(item => {
+                const modules = appData[item.key] || [];
+                let semQP = 0;
+                let semGPACredits = 0;
+                let semGradCredits = 0;
+                let semSUCredits = 0;
+
+                modules.forEach(m => {
+                    const credits = parseFloat(m.credits);
+                    if (isNaN(credits) || credits <= 0) return;
+
+                    const hasGrade = m.grade && m.grade in GRADE_SCALE;
+                    const gradePoint = hasGrade ? GRADE_SCALE[m.grade] : 0;
+
+                    if (m.su) {
+                        if (hasGrade) {
+                            if (m.grade !== 'F') {
+                                semGradCredits += credits;
+                            }
+                            semSUCredits += credits;
+                        }
+                    } else {
+                        if (hasGrade) {
+                            semGPACredits += credits;
+                            semQP += gradePoint * credits;
+                            if (m.grade !== 'F') {
+                                semGradCredits += credits;
+                            }
+                        }
+                    }
+                });
+
+                const semGPA = semGPACredits > 0 ? (semQP / semGPACredits) : null;
+                const badge = document.getElementById(`badge-${item.key}`);
+                if (badge) {
+                    badge.innerText = semGPA !== null ? semGPA.toFixed(2) : "—";
+                    if (semGPA === null) {
+                        badge.style.backgroundColor = '#94a3b8';
+                    } else if (semGPA >= 4.5) {
+                        badge.style.backgroundColor = '#10b981';
+                    } else if (semGPA >= 3.5) {
+                        badge.style.backgroundColor = '#3b82f6';
+                    } else if (semGPA >= 2.0) {
+                        badge.style.backgroundColor = '#f59e0b';
+                    } else {
+                        badge.style.backgroundColor = '#ef4444';
+                    }
+                }
+
+                document.getElementById(`footer-credits-${item.key}`).innerText = `GPA Credits: ${semGPACredits}`;
+                document.getElementById(`footer-qp-${item.key}`).innerText = `QP: ${semQP.toFixed(1)}`;
+
+                totalQP += semQP;
+                totalGPACredits += semGPACredits;
+                totalGradCredits += semGradCredits;
+                totalSUCredits += semSUCredits;
+
+                yearTotals[item.yr].qp += semQP;
+                yearTotals[item.yr].credits += semGPACredits;
+
+                trendData.push({ label: item.lbl, gpa: semGPA });
+            });
+
+            const cumulativeGPA = totalGPACredits > 0 ? (totalQP / totalGPACredits) : 0.00;
+            document.getElementById('cum-gpa').innerText = totalGPACredits > 0 ? cumulativeGPA.toFixed(5) : "0.00";
+            document.getElementById('total-gpa-credits').innerText = totalGPACredits;
+            document.getElementById('total-earned-credits').innerText = totalGradCredits;
+            document.getElementById('total-qp').innerText = totalQP.toFixed(1);
+            document.getElementById('total-su-credits').innerText = totalSUCredits;
+            
+            // Classification System Logic
+            const classificationBadge = document.getElementById('honors-classification');
+            if (totalGPACredits === 0) {
+                classificationBadge.innerText = "Classification: —";
+                classificationBadge.style.backgroundColor = "#f1f5f9";
+                classificationBadge.style.color = "var(--text-main)";
+            } else if (cumulativeGPA >= 4.50) {
+                classificationBadge.innerText = "Highest Distinction";
+                classificationBadge.style.backgroundColor = "#d1fae5";
+                classificationBadge.style.color = "#065f46";
+            } else if (cumulativeGPA >= 4.00) {
+                classificationBadge.innerText = "Distinction";
+                classificationBadge.style.backgroundColor = "#dbeafe";
+                classificationBadge.style.color = "#1e40af";
+            } else if (cumulativeGPA >= 3.50) {
+                classificationBadge.innerText = "Merit";
+                classificationBadge.style.backgroundColor = "#e0e7ff";
+                classificationBadge.style.color = "#3730a3";
+            } else if (cumulativeGPA >= 3.00) {
+                classificationBadge.innerText = "Honours";
+                classificationBadge.style.backgroundColor = "#fef3c7";
+                classificationBadge.style.color = "#92400e";
+            } else if (cumulativeGPA >= 2.00) {
+                classificationBadge.innerText = "Pass";
+                classificationBadge.style.backgroundColor = "#f3f4f6";
+                classificationBadge.style.color = "#374151";
+            } else {
+                classificationBadge.innerText = "Fail / No Class";
+                classificationBadge.style.backgroundColor = "#fee2e2";
+                classificationBadge.style.color = "#991b1b";
+            }
+
+            for (let yr = 1; yr <= 4; yr++) {
+                const yrGpaBadge = document.getElementById(`year-${yr}-gpa`);
+                if (yrGpaBadge) {
+                    const yrGpa = yearTotals[yr].credits > 0 ? (yearTotals[yr].qp / yearTotals[yr].credits) : null;
+                    yrGpaBadge.innerText = yrGpa !== null ? `Year GPA: ${yrGpa.toFixed(2)}` : "Year GPA: —";
+                }
+            }
+
+            renderChart(trendData);
+        }
+
+        function renderChart(trendData) {
+            const chartDiv = document.getElementById('trend-chart');
+            chartDiv.innerHTML = '';
+
+            trendData.forEach(d => {
+                const barWrapper = document.createElement('div');
+                barWrapper.className = 'bar-wrapper';
+                const gpaVal = d.gpa !== null ? d.gpa : 0;
+                const heightPercent = (gpaVal / 5.0) * 100;
+
+                barWrapper.innerHTML = `
+                    <div class="bar-tooltip">${d.gpa !== null ? d.gpa.toFixed(2) : '—'}</div>
+                    <div class="bar" style="height: ${heightPercent}%; ${d.gpa === null ? 'background-color: #cbd5e1;' : ''}"></div>
+                    <div class="bar-label">${d.label}</div>
+                `;
+                chartDiv.appendChild(barWrapper);
+            });
+        }
+
+        function saveToLocalStorage() {
+            localStorage.setItem('university_gpa_su_data_v2', JSON.stringify(appData));
+        }
+
+        function clearAll() {
+            if (confirm("Are you sure you want to clear all data? This will wipe your inputs clean.")) {
+                generateBlankStructure();
+                saveToLocalStorage();
+                renderStructure();
+                calculateGPA();
+            }
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
