@@ -1,0 +1,8 @@
+name = "gpa-calculator-for-nus"
+compatibility_date = "2026-06-11"
+pages_build_output_dir = "dist"
+
+[[kv_namespaces]]
+binding = "NUSMODS_CACHE"
+id = "f46ea6c8c8504a1c93593ce8e0982472"
+preview_id = "c72ebd4f032840a5a61ac600f96ef794"
