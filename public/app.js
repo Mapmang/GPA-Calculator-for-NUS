@@ -174,6 +174,9 @@ function createRowEl(semId, index) {
   const credInput = rowEl.querySelector('.credits-input');
   const suCheck = rowEl.querySelector('.su-check');
 
+  // example code only on the first row of each semester
+  if (index > 0) modInput.placeholder = '';
+
   modInput.value = row.m;
   gradeSel.value = row.g;
   credInput.value = row.c ?? '';
