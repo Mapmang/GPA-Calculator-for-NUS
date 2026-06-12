@@ -39,7 +39,8 @@ refresh. Three layers keep it fresh:
    static assets. `/api/modules` falls back to this snapshot whenever KV has no
    data (e.g. right after the first deploy, before the cron has ever run).
 3. **Optional GitHub Action** (`.github/workflows/refresh-data.yml`): re-runs
-   the snapshot + deploy daily at 6 AM SGT. See "Workers Free plan" below.
+   the snapshot + deploy daily at 6 AM SGT, and also deploys on every push to
+   `main`. See "Workers Free plan" below.
 
 ### Note for the Workers **Free** plan
 
@@ -79,7 +80,8 @@ Push this repo to GitHub and add two repository secrets:
 - `CLOUDFLARE_ACCOUNT_ID` — from the Workers dashboard overview page
 
 The workflow in `.github/workflows/refresh-data.yml` then redeploys with fresh
-NUSMods data every day at 6:00 AM SGT (22:00 UTC).
+NUSMods data every day at 6:00 AM SGT (22:00 UTC), and also deploys
+automatically whenever you push to `main`.
 
 ### Manual refresh (optional)
 
