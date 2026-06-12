@@ -4,7 +4,6 @@
   --orange: #ef7c00;
   --bg: #f4f6fa;
   --card: #ffffff;
-  --input-bg: #ffffff;
   --border: #e2e8f1;
   --text: #1b2535;
   --muted: #6b7689;
@@ -19,20 +18,13 @@
 
 * { box-sizing: border-box; }
 
-html, body {
-  margin: 0;
-  padding: 0;
-}
-
-html { scroll-behavior: smooth; }
-
 body {
+  margin: 0;
   font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
   background: var(--bg);
   color: var(--text);
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
-  transition: background 0.3s, color 0.3s;
 }
 
 .page {
@@ -189,7 +181,7 @@ body {
   padding: 16px 16px 14px;
   display: flex;
   flex-direction: column;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color 0.15s;
 }
 
 .sem-card:focus-within {
@@ -265,7 +257,8 @@ body {
 .module-cell { min-width: 0; position: relative; }
 
 .module-input,
-.credits-input {
+.credits-input,
+.grade-trigger {
   width: 100%;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -273,7 +266,7 @@ body {
   font-size: 13.5px;
   font-family: inherit;
   color: var(--text);
-  background: var(--input-bg);
+  background: var(--card);
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
@@ -281,7 +274,9 @@ body {
 .module-input::placeholder { text-transform: none; }
 
 .module-input:focus,
-.credits-input:focus {
+.credits-input:focus,
+.grade-dd.open .grade-trigger,
+.grade-trigger:focus-visible {
   outline: none;
   border-color: var(--orange);
   box-shadow: 0 0 0 3px rgba(239, 124, 0, 0.15);
@@ -292,22 +287,14 @@ body {
 .grade-dd { position: relative; min-width: 0; }
 
 .grade-trigger {
-  width: 100%;
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 4px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
   padding: 0 9px;
-  font-size: 13.5px;
-  font-family: inherit;
   font-weight: 600;
-  color: var(--text);
-  background: var(--input-bg);
   cursor: pointer;
-  transition: border-color 0.15s, box-shadow 0.15s, color 0.15s;
 }
 
 /* caret */
@@ -321,21 +308,6 @@ body {
 }
 
 .grade-dd.open .grade-trigger::after { transform: rotate(180deg); }
-
-/* grade-tier colour accent on the closed trigger */
-.grade-trigger.g-a { color: var(--green); box-shadow: inset 3px 0 0 var(--green); }
-.grade-trigger.g-b { color: var(--blue);  box-shadow: inset 3px 0 0 var(--blue); }
-.grade-trigger.g-c { color: var(--orange); box-shadow: inset 3px 0 0 var(--orange); }
-.grade-trigger.g-d { color: #d98324; box-shadow: inset 3px 0 0 #d98324; }
-.grade-trigger.g-f { color: var(--red); box-shadow: inset 3px 0 0 var(--red); }
-
-/* open / focused state takes precedence over the tier accent */
-.grade-dd.open .grade-trigger,
-.grade-trigger:focus-visible {
-  outline: none;
-  border-color: var(--orange);
-  box-shadow: 0 0 0 3px rgba(239, 124, 0, 0.15);
-}
 
 .grade-menu {
   position: absolute;
@@ -373,17 +345,8 @@ body {
 
 .grade-opt + .grade-opt { margin-top: 1px; }
 
-.grade-opt.g-a { color: var(--green); }
-.grade-opt.g-b { color: var(--blue); }
-.grade-opt.g-c { color: var(--orange); }
-.grade-opt.g-d { color: #d98324; }
-.grade-opt.g-f { color: var(--red); }
-
-.grade-opt.active { background: var(--hover-blue); }
-
-.grade-opt.selected {
-  background: var(--hover-blue);
-}
+.grade-opt.active,
+.grade-opt.selected { background: var(--hover-blue); }
 
 .grade-opt.selected::after {
   content: "✓";
@@ -576,12 +539,6 @@ body {
   color: var(--orange);
 }
 
-.ac-empty {
-  padding: 10px 12px;
-  font-size: 12.5px;
-  color: var(--muted);
-}
-
 /* ---------- Dynamic island (floating GPA, visible while scrolling) ---------- */
 
 .gpa-island {
@@ -666,7 +623,6 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
   .gpa-island { transition: opacity 0.2s; }
   .gpa-island.visible,
   .gpa-island:hover { transform: translate(0, -50%); }
@@ -686,14 +642,14 @@ body {
 
 .footer-source { margin-top: 14px; }
 
-.gh-link {
+.footer .gh-link {
   display: inline-flex;
   align-items: center;
   gap: 7px;
   padding: 6px 12px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  color: var(--text) !important;
+  color: var(--text);
   text-decoration: none;
   font-size: 12.5px;
   font-weight: 600;
@@ -701,17 +657,14 @@ body {
   transition: border-color 0.15s, color 0.15s, box-shadow 0.15s, transform 0.15s;
 }
 
-.gh-link:hover {
+.footer .gh-link:hover {
   border-color: var(--blue);
-  color: var(--blue) !important;
+  color: var(--blue);
   box-shadow: var(--shadow);
   transform: translateY(-1px);
 }
 
-.gh-icon {
-  flex-shrink: 0;
-  display: block;
-}
+.gh-icon { flex-shrink: 0; display: block; }
 
 /* ---------- Responsive ---------- */
 

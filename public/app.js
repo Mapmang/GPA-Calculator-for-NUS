@@ -12,28 +12,16 @@ const GRADE_POINTS = {
   'D+': 1.5, 'D': 1,
   'F': 0,
 };
-const GRADES = Object.keys(GRADE_POINTS);
 const S_THRESHOLD = 2; // S requires a C (2.0) or better
 
-// Maps a letter grade to a colour-tier class for the grade dropdown.
-const GRADE_TIERS = {
-  'A+': 'g-a', 'A': 'g-a', 'A-': 'g-a',
-  'B+': 'g-b', 'B': 'g-b', 'B-': 'g-b',
-  'C+': 'g-c', 'C': 'g-c',
-  'D+': 'g-d', 'D': 'g-d',
-  'F': 'g-f',
-};
-const TIER_CLASSES = ['g-a', 'g-b', 'g-c', 'g-d', 'g-f'];
-const GRADE_OPTIONS = ['', ...GRADES]; // leading '' is the "no grade" choice
+const GRADE_OPTIONS = ['', ...Object.keys(GRADE_POINTS)]; // leading '' is the "no grade" choice
 
 // Tracks the one open grade menu so a new open (or an outside click) closes it.
 let openGradeDd = null;
 
 function closeGradeMenu() {
-  if (openGradeDd) {
-    openGradeDd.close();
-    openGradeDd = null;
-  }
+  openGradeDd?.close();
+  openGradeDd = null;
 }
 
 document.addEventListener('click', (e) => {
@@ -41,7 +29,7 @@ document.addEventListener('click', (e) => {
 });
 
 // Builds the custom grade dropdown for a row: a styled trigger plus a
-// colour-coded popup menu that replaces the native <select> popup.
+// popup menu that replaces the native <select> popup.
 // onChange() is called after the row's grade is updated.
 function setupGradeDropdown(rowEl, onChange) {
   const root = rowEl.querySelector('.grade-dd');
@@ -53,14 +41,14 @@ function setupGradeDropdown(rowEl, onChange) {
   menu.setAttribute('role', 'listbox');
   menu.hidden = true;
 
-  GRADE_OPTIONS.forEach((g) => {
+  GRADE_OPTIONS.forEach((g, i) => {
     const opt = document.createElement('div');
-    opt.className = 'grade-opt' + (GRADE_TIERS[g] ? ` ${GRADE_TIERS[g]}` : '');
+    opt.className = 'grade-opt';
     opt.dataset.val = g;
     opt.setAttribute('role', 'option');
     opt.textContent = g === '' ? '–' : g;
     opt.addEventListener('click', () => commit(g));
-    opt.addEventListener('mousemove', () => setActive(GRADE_OPTIONS.indexOf(g)));
+    opt.addEventListener('mousemove', () => setActive(i));
     menu.appendChild(opt);
   });
   root.appendChild(menu);
@@ -70,8 +58,6 @@ function setupGradeDropdown(rowEl, onChange) {
   function render() {
     const g = getRow(rowEl).g;
     valEl.textContent = g === '' ? '–' : g;
-    trigger.classList.remove(...TIER_CLASSES);
-    if (GRADE_TIERS[g]) trigger.classList.add(GRADE_TIERS[g]);
     [...menu.children].forEach((o) =>
       o.classList.toggle('selected', o.dataset.val === g));
   }
@@ -83,7 +69,6 @@ function setupGradeDropdown(rowEl, onChange) {
   }
 
   function open() {
-    if (openGradeDd && openGradeDd.root === root) return;
     closeGradeMenu();
     hideAutocomplete();
     menu.hidden = false;
@@ -141,12 +126,8 @@ function setupGradeDropdown(rowEl, onChange) {
   render(); // reflect the initial (possibly restored) grade
 }
 
-const SEMESTERS = [];
-for (let y = 1; y <= 4; y++) {
-  for (let s = 1; s <= 2; s++) {
-    SEMESTERS.push({ id: `y${y}s${s}`, year: y, sem: s });
-  }
-}
+const SEMESTERS = []; // semester ids, 'y1s1' … 'y4s2'
+for (let y = 1; y <= 4; y++) for (let s = 1; s <= 2; s++) SEMESTERS.push(`y${y}s${s}`);
 
 const STORAGE_KEY = 'nus-gpa-calc-v1';
 const DEFAULT_ROWS = 4;     // empty module rows each semester starts with
@@ -154,9 +135,8 @@ const GRADUATION_MCS = 160; // standard 4-year honours degree requirement
 
 // ---------- Module data (from /api/modules, refreshed daily at 6 AM SGT) ----------
 
-let moduleMap = new Map();   // code -> { title, credits, su }
-let searchList = [];         // [{ code, title, titleLower, credits, su }]
-let dataInfo = null;
+const moduleMap = new Map(); // code -> { title, credits, su }
+const searchList = [];       // [{ code, title, titleLower, credits, su }]
 
 async function loadModuleData() {
   const statusEl = document.getElementById('data-status');
@@ -164,25 +144,21 @@ async function loadModuleData() {
     const res = await fetch('/api/modules');
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    moduleMap = new Map();
-    searchList = [];
     for (const [code, title, credits, su] of data.modules) {
       const entry = { code, title, titleLower: title.toLowerCase(), credits, su: su === 1 };
       moduleMap.set(code, entry);
       searchList.push(entry);
     }
-    dataInfo = data;
     const fetched = new Date(data.fetchedAt);
     statusEl.textContent =
       `AY${data.acadYear} · ${data.count.toLocaleString()} modules from NUSMods ` +
       `· refreshed daily at 6:00 AM SGT (last update: ${fetched.toLocaleString(undefined, {
         day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit',
       })})`;
-    statusEl.classList.remove('error');
     // Re-resolve anything restored from a previous visit
     document.querySelectorAll('.row').forEach((rowEl) => resolveModule(rowEl, false));
     recalc();
-  } catch (err) {
+  } catch {
     statusEl.textContent =
       'Module data unavailable right now — autocomplete is off, but you can still enter credits manually.';
     statusEl.classList.add('error');
@@ -197,9 +173,7 @@ function emptyRow() {
 
 function defaultState() {
   const rows = {};
-  for (const s of SEMESTERS) {
-    rows[s.id] = Array.from({ length: DEFAULT_ROWS }, emptyRow);
-  }
+  for (const id of SEMESTERS) rows[id] = Array.from({ length: DEFAULT_ROWS }, emptyRow);
   return { rows };
 }
 
@@ -209,15 +183,15 @@ function loadState() {
     if (!raw) return defaultState();
     const parsed = JSON.parse(raw);
     const state = defaultState();
-    for (const s of SEMESTERS) {
-      if (Array.isArray(parsed.rows?.[s.id]) && parsed.rows[s.id].length) {
-        state.rows[s.id] = parsed.rows[s.id].map((r) => ({
+    for (const id of SEMESTERS) {
+      if (Array.isArray(parsed.rows?.[id]) && parsed.rows[id].length) {
+        state.rows[id] = parsed.rows[id].map((r) => ({
           m: typeof r.m === 'string' ? r.m : '',
           g: GRADE_POINTS[r.g] !== undefined ? r.g : '',
           c: Number.isFinite(r.c) ? r.c : null,
           su: r.su === true,
         }));
-        while (state.rows[s.id].length < DEFAULT_ROWS) state.rows[s.id].push(emptyRow());
+        while (state.rows[id].length < DEFAULT_ROWS) state.rows[id].push(emptyRow());
       }
     }
     return state;
@@ -256,7 +230,6 @@ function buildLayout() {
     for (let s = 1; s <= 2; s++) {
       const semId = `y${y}s${s}`;
       const card = semTpl.content.firstElementChild.cloneNode(true);
-      card.dataset.sem = semId;
       card.querySelector('.sem-title').textContent = `Semester ${s}`;
       card.querySelector('.add-row-btn').addEventListener('click', () => {
         state.rows[semId].push(emptyRow());
@@ -511,21 +484,17 @@ function selectModule(i) {
 
 // ---------- GPA calculation (Excel "Backend" sheet logic) ----------
 
-function classification(gpa) {
-  if (gpa >= 4.5) return 'Honours (Highest Distinction)';
-  if (gpa >= 4.0) return 'Honours (Distinction)';
-  if (gpa >= 3.5) return 'Honours (Merit)';
-  if (gpa >= 3.0) return 'Honours';
-  return 'Pass';
-}
+// [min GPA, full label, compact label for the floating island]
+const CLASSIFICATIONS = [
+  [4.5, 'Honours (Highest Distinction)', 'Highest Dist.'],
+  [4.0, 'Honours (Distinction)', 'Distinction'],
+  [3.5, 'Honours (Merit)', 'Merit'],
+  [3.0, 'Honours', 'Honours'],
+  [0, 'Pass', 'Pass'],
+];
 
-// Compact label for the floating island (limited width).
-function shortClass(gpa) {
-  if (gpa >= 4.5) return 'Highest Dist.';
-  if (gpa >= 4.0) return 'Distinction';
-  if (gpa >= 3.5) return 'Merit';
-  if (gpa >= 3.0) return 'Honours';
-  return 'Pass';
+function classification(gpa, short) {
+  return CLASSIFICATIONS.find(([min]) => gpa >= min)[short ? 2 : 1];
 }
 
 function recalc() {
@@ -534,14 +503,14 @@ function recalc() {
   let suCredits = 0;
   let earnedMcs = 0;
 
-  for (const s of SEMESTERS) {
+  for (const id of SEMESTERS) {
     let qp = 0;
     let credits = 0;
-    state.rows[s.id].forEach((row, i) => {
+    state.rows[id].forEach((row, i) => {
       const gp = GRADE_POINTS[row.g];
       const hasGrade = gp !== undefined;
       const c = row.c ?? 0;
-      const rowEl = semEls[s.id].rowsEl.children[i];
+      const rowEl = semEls[id].rowsEl.children[i];
 
       if (hasGrade && c > 0) {
         if (row.su) {
@@ -572,18 +541,9 @@ function recalc() {
       }
     });
 
-    const gpaEl = semEls[s.id].gpaEl;
-    if (credits > 0) {
-      const semGpa = qp / credits;
-      gpaEl.innerHTML = '';
-      gpaEl.append('GPA ');
-      const b = document.createElement('b');
-      b.textContent = semGpa.toFixed(2);
-      gpaEl.appendChild(b);
-      gpaEl.append(` · ${fmtMc(credits)} MCs`);
-    } else {
-      gpaEl.textContent = '–';
-    }
+    semEls[id].gpaEl.innerHTML = credits > 0
+      ? `GPA <b>${(qp / credits).toFixed(2)}</b> · ${fmtMc(credits)} MCs`
+      : '–';
 
     totalQp += qp;
     totalCredits += credits;
@@ -597,7 +557,7 @@ function recalc() {
     classEl.textContent = classification(gpa);
     hasGpa = true;
     islandGpaEl.textContent = gpa.toFixed(2);
-    islandClassEl.textContent = shortClass(gpa);
+    islandClassEl.textContent = classification(gpa, true);
   } else {
     cumEl.textContent = '–';
     classEl.textContent = '';
@@ -632,8 +592,7 @@ let summaryVisible = true; // updated by the IntersectionObserver below
 function updateIslandVisibility() {
   const show = hasGpa && !summaryVisible;
   islandEl.classList.toggle('visible', show);
-  islandEl.hidden = false;
-  islandEl.setAttribute('aria-hidden', show ? 'false' : 'true');
+  islandEl.setAttribute('aria-hidden', String(!show));
 }
 
 islandEl.addEventListener('click', () => {
