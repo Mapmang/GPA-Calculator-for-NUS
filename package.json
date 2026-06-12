@@ -1,5 +1,14 @@
 {
+  "name": "nus-gpa-calculator",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
   "scripts": {
-    "build:cloudflare": "mkdir -p dist && cp index.html api.html app.js api-status.js gpa-api.js nus-api.js styles.css LICENSE dist/"
+    "fetch-data": "node scripts/fetch-modules.mjs",
+    "dev": "wrangler dev",
+    "deploy": "npm run fetch-data && wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
   }
 }

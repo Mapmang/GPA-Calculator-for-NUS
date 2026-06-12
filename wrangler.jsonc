@@ -1,0 +1,31 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "nus-gpa-calculator",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-05-01",
+
+  // Static frontend. API routes are handled by the worker first.
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
+  },
+
+  // Daily NUSMods refresh: 22:00 UTC = 6:00 AM Singapore time.
+  "triggers": {
+    "crons": ["0 22 * * *"]
+  },
+
+  // One-time setup:  npx wrangler kv namespace create MODULES
+  // then paste the generated id below before `npm run deploy`.
+  "kv_namespaces": [
+    {
+      "binding": "MODULES_KV",
+      "id": "157adc91161549f4b8b3cff6ab816a74"
+    }
+  ],
+
+  "observability": {
+    "enabled": true
+  }
+}

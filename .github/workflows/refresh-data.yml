@@ -1,0 +1,23 @@
+# Optional: daily NUSMods data refresh for the Workers Free plan.
+# Requires repository secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
+name: Refresh NUSMods data
+
+on:
+  schedule:
+    - cron: "0 22 * * *" # 22:00 UTC = 6:00 AM Singapore time
+  workflow_dispatch: {}
+
+jobs:
+  refresh-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm run fetch-data
+      - run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
