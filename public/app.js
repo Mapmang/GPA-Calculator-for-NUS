@@ -23,6 +23,8 @@ for (let y = 1; y <= 4; y++) {
 }
 
 const STORAGE_KEY = 'nus-gpa-calc-v1';
+const DEFAULT_ROWS = 4;     // empty module rows each semester starts with
+const GRADUATION_MCS = 160; // standard 4-year honours degree requirement
 
 // ---------- Module data (from /api/modules, refreshed daily at 6 AM SGT) ----------
 
@@ -69,7 +71,9 @@ function emptyRow() {
 
 function defaultState() {
   const rows = {};
-  for (const s of SEMESTERS) rows[s.id] = [emptyRow()];
+  for (const s of SEMESTERS) {
+    rows[s.id] = Array.from({ length: DEFAULT_ROWS }, emptyRow);
+  }
   return { rows };
 }
 
@@ -87,6 +91,7 @@ function loadState() {
           c: Number.isFinite(r.c) ? r.c : null,
           su: r.su === true,
         }));
+        while (state.rows[s.id].length < DEFAULT_ROWS) state.rows[s.id].push(emptyRow());
       }
     }
     return state;
@@ -403,7 +408,7 @@ function recalc() {
   let totalQp = 0;
   let totalCredits = 0;
   let suCredits = 0;
-  let moduleCount = 0;
+  let earnedMcs = 0;
 
   for (const s of SEMESTERS) {
     let qp = 0;
@@ -415,12 +420,13 @@ function recalc() {
       const rowEl = semEls[s.id].rowsEl.children[i];
 
       if (hasGrade && c > 0) {
-        moduleCount++;
         if (row.su) {
           suCredits += c;
+          if (gp >= S_THRESHOLD) earnedMcs += c; // S earns credits, U doesn't
         } else {
           qp += gp * c;
           credits += c;
+          if (row.g !== 'F') earnedMcs += c; // D and above pass
         }
       }
 
@@ -469,9 +475,13 @@ function recalc() {
     cumEl.textContent = '–';
     classEl.textContent = '';
   }
-  document.getElementById('stat-mcs').textContent = fmtMc(totalCredits);
+  document.getElementById('stat-total').textContent = fmtMc(earnedMcs);
   document.getElementById('stat-su').textContent = fmtMc(suCredits);
-  document.getElementById('stat-mods').textContent = String(moduleCount);
+  const left = Math.max(0, GRADUATION_MCS - earnedMcs);
+  document.getElementById('stat-total-label').textContent =
+    left > 0 ? `Total MCs · ${fmtMc(left)} to graduation` : 'Total MCs · requirement met';
+  document.getElementById('mc-progress-fill').style.width =
+    `${Math.min(100, (earnedMcs / GRADUATION_MCS) * 100)}%`;
 }
 
 function fmtMc(n) {

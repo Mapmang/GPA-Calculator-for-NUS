@@ -126,6 +126,29 @@ body {
   opacity: 0.75;
 }
 
+.stat-total-goal {
+  font-size: 15px;
+  font-weight: 500;
+  opacity: 0.7;
+}
+
+.mc-progress {
+  width: 130px;
+  height: 6px;
+  margin: 6px auto 4px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.22);
+  overflow: hidden;
+}
+
+.mc-progress-fill {
+  height: 100%;
+  width: 0;
+  border-radius: 3px;
+  background: var(--orange);
+  transition: width 0.25s;
+}
+
 /* ---------- Data status ---------- */
 
 .data-status {
@@ -187,9 +210,8 @@ body {
 .sem-rows-head,
 .row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 88px 64px 58px 28px;
+  grid-template-columns: minmax(0, 1fr) 88px 64px 64px 28px;
   gap: 8px;
-  align-items: center;
 }
 
 .sem-rows-head {
@@ -200,11 +222,24 @@ body {
   padding: 0 2px 6px;
 }
 
+/* column alignment: MCs and S/U columns are centered, in both the
+   header row and the data rows */
+.sem-rows-head span:nth-child(3),
 .sem-rows-head .su-col { text-align: center; }
 
 .row {
   padding: 5px 0;
   border-top: 1px solid var(--border);
+  align-items: start; /* tops align even when a module title hint appears */
+}
+
+/* every control shares the same height so rows line up cleanly */
+.row > .grade-select,
+.row > .credits-input,
+.row > .su-cell,
+.row > .remove-btn,
+.module-input {
+  height: 37px;
 }
 
 .row.excluded .grade-select,
@@ -256,13 +291,17 @@ body {
 .credits-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .credits-input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
 
-/* ---------- S/U toggle ---------- */
+/* ---------- S/U toggle switch ---------- */
 
-.su-toggle {
+.su-cell {
+  position: relative;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 4px;
+  justify-content: center; /* switch sits centered under the S/U header */
+}
+
+.su-toggle {
+  display: inline-flex;
   cursor: pointer;
   user-select: none;
 }
@@ -273,47 +312,59 @@ body {
   pointer-events: none;
 }
 
-.su-box {
-  width: 30px;
-  height: 20px;
-  border-radius: 6px;
-  border: 1.5px solid var(--border);
+.su-switch {
+  width: 38px;
+  height: 22px;
+  border-radius: 11px;
+  background: #d4dae4;
+  position: relative;
+  transition: background 0.18s;
+}
+
+.su-switch::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
   background: #fff;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 9.5px;
-  font-weight: 700;
-  color: var(--muted);
-  transition: all 0.15s;
+  box-shadow: 0 1px 3px rgba(16, 30, 54, 0.3);
+  transition: left 0.18s;
 }
 
-.su-box::after { content: "S/U"; }
-
-.su-check:checked + .su-box {
+.su-check:checked + .su-switch {
   background: var(--orange);
-  border-color: var(--orange);
-  color: #fff;
 }
 
-.su-check:focus-visible + .su-box {
+.su-check:checked + .su-switch::after {
+  left: 18px;
+}
+
+.su-check:focus-visible + .su-switch {
   box-shadow: 0 0 0 3px rgba(239, 124, 0, 0.25);
 }
 
 .su-toggle.disabled {
   cursor: not-allowed;
-  opacity: 0.4;
+  opacity: 0.45;
 }
 
-.su-toggle.disabled .su-box {
-  background: var(--bg);
-  text-decoration: line-through;
+.su-toggle.disabled .su-switch {
+  background: #e9edf3;
+}
+
+.su-toggle.disabled .su-switch::after {
+  background: #f6f8fb;
+  box-shadow: inset 0 0 0 1px var(--border);
 }
 
 .su-result {
+  position: absolute;
+  left: calc(50% + 23px);
   font-size: 11px;
   font-weight: 700;
-  width: 12px;
 }
 
 .su-result.s { color: var(--green); }
@@ -329,7 +380,10 @@ body {
   line-height: 1;
   cursor: pointer;
   border-radius: 6px;
-  padding: 4px 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
 }
 
 .remove-btn:hover { color: var(--red); background: #fbecec; }
@@ -432,6 +486,6 @@ body {
 
 @media (max-width: 480px) {
   .sem-rows-head,
-  .row { grid-template-columns: minmax(0, 1fr) 74px 52px 52px 24px; gap: 5px; }
+  .row { grid-template-columns: minmax(0, 1fr) 72px 48px 58px 24px; gap: 5px; }
   .page { padding: 18px 12px 40px; }
 }

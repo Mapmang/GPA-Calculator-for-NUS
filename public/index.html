@@ -26,16 +26,13 @@
       </div>
       <div class="summary-stats">
         <div class="stat">
-          <div class="stat-value" id="stat-mcs">0</div>
-          <div class="stat-label">MCs in GPA</div>
+          <div class="stat-value"><span id="stat-total">0</span><span class="stat-total-goal"> / 160</span></div>
+          <div class="mc-progress"><div class="mc-progress-fill" id="mc-progress-fill"></div></div>
+          <div class="stat-label" id="stat-total-label">Total MCs</div>
         </div>
         <div class="stat">
           <div class="stat-value" id="stat-su">0</div>
           <div class="stat-label">MCs S/U&rsquo;d</div>
-        </div>
-        <div class="stat">
-          <div class="stat-value" id="stat-mods">0</div>
-          <div class="stat-label">Modules</div>
         </div>
       </div>
     </section>
@@ -80,11 +77,13 @@
       </div>
       <select class="grade-select" title="Letter grade"></select>
       <input class="credits-input" type="number" min="0" max="40" step="0.5" placeholder="MCs" title="Modular credits (editable)">
-      <label class="su-toggle" title="Count as Satisfactory/Unsatisfactory (excluded from GPA)">
-        <input class="su-check" type="checkbox">
-        <span class="su-box"></span>
+      <div class="su-cell">
+        <label class="su-toggle" title="Count as Satisfactory/Unsatisfactory (excluded from GPA)">
+          <input class="su-check" type="checkbox">
+          <span class="su-switch"></span>
+        </label>
         <span class="su-result"></span>
-      </label>
+      </div>
       <button class="remove-btn" type="button" title="Remove module">&times;</button>
     </div>
   </template>
