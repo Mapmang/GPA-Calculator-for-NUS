@@ -15,6 +15,132 @@ const GRADE_POINTS = {
 const GRADES = Object.keys(GRADE_POINTS);
 const S_THRESHOLD = 2; // S requires a C (2.0) or better
 
+// Maps a letter grade to a colour-tier class for the grade dropdown.
+const GRADE_TIERS = {
+  'A+': 'g-a', 'A': 'g-a', 'A-': 'g-a',
+  'B+': 'g-b', 'B': 'g-b', 'B-': 'g-b',
+  'C+': 'g-c', 'C': 'g-c',
+  'D+': 'g-d', 'D': 'g-d',
+  'F': 'g-f',
+};
+const TIER_CLASSES = ['g-a', 'g-b', 'g-c', 'g-d', 'g-f'];
+const GRADE_OPTIONS = ['', ...GRADES]; // leading '' is the "no grade" choice
+
+// Tracks the one open grade menu so a new open (or an outside click) closes it.
+let openGradeDd = null;
+
+function closeGradeMenu() {
+  if (openGradeDd) {
+    openGradeDd.close();
+    openGradeDd = null;
+  }
+}
+
+document.addEventListener('click', (e) => {
+  if (openGradeDd && !openGradeDd.root.contains(e.target)) closeGradeMenu();
+});
+
+// Builds the custom grade dropdown for a row: a styled trigger plus a
+// colour-coded popup menu that replaces the native <select> popup.
+// onChange() is called after the row's grade is updated.
+function setupGradeDropdown(rowEl, onChange) {
+  const root = rowEl.querySelector('.grade-dd');
+  const trigger = root.querySelector('.grade-trigger');
+  const valEl = root.querySelector('.grade-trigger-val');
+
+  const menu = document.createElement('div');
+  menu.className = 'grade-menu';
+  menu.setAttribute('role', 'listbox');
+  menu.hidden = true;
+
+  GRADE_OPTIONS.forEach((g) => {
+    const opt = document.createElement('div');
+    opt.className = 'grade-opt' + (GRADE_TIERS[g] ? ` ${GRADE_TIERS[g]}` : '');
+    opt.dataset.val = g;
+    opt.setAttribute('role', 'option');
+    opt.textContent = g === '' ? '–' : g;
+    opt.addEventListener('click', () => commit(g));
+    opt.addEventListener('mousemove', () => setActive(GRADE_OPTIONS.indexOf(g)));
+    menu.appendChild(opt);
+  });
+  root.appendChild(menu);
+
+  let activeIdx = -1;
+
+  function render() {
+    const g = getRow(rowEl).g;
+    valEl.textContent = g === '' ? '–' : g;
+    trigger.classList.remove(...TIER_CLASSES);
+    if (GRADE_TIERS[g]) trigger.classList.add(GRADE_TIERS[g]);
+    [...menu.children].forEach((o) =>
+      o.classList.toggle('selected', o.dataset.val === g));
+  }
+
+  function setActive(i) {
+    activeIdx = i;
+    [...menu.children].forEach((o, j) => o.classList.toggle('active', j === i));
+    menu.children[i]?.scrollIntoView({ block: 'nearest' });
+  }
+
+  function open() {
+    if (openGradeDd && openGradeDd.root === root) return;
+    closeGradeMenu();
+    hideAutocomplete();
+    menu.hidden = false;
+    trigger.setAttribute('aria-expanded', 'true');
+    root.classList.add('open');
+    setActive(Math.max(0, GRADE_OPTIONS.indexOf(getRow(rowEl).g)));
+    openGradeDd = {
+      root,
+      close() {
+        menu.hidden = true;
+        trigger.setAttribute('aria-expanded', 'false');
+        root.classList.remove('open');
+        [...menu.children].forEach((o) => o.classList.remove('active'));
+      },
+    };
+  }
+
+  function commit(g) {
+    getRow(rowEl).g = g;
+    render();
+    closeGradeMenu();
+    trigger.focus();
+    onChange();
+  }
+
+  trigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (openGradeDd && openGradeDd.root === root) closeGradeMenu();
+    else open();
+  });
+
+  trigger.addEventListener('keydown', (e) => {
+    if (menu.hidden) {
+      if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        open();
+      }
+      return;
+    }
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActive(Math.min(GRADE_OPTIONS.length - 1, activeIdx + 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActive(Math.max(0, activeIdx - 1));
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      if (activeIdx >= 0) commit(GRADE_OPTIONS[activeIdx]);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      closeGradeMenu();
+    }
+  });
+
+  render(); // reflect the initial (possibly restored) grade
+}
+
 const SEMESTERS = [];
 for (let y = 1; y <= 4; y++) {
   for (let s = 1; s <= 2; s++) {
@@ -157,28 +283,20 @@ function createRowEl(semId, index) {
   rowEl.dataset.sem = semId;
   rowEl.dataset.index = String(index);
 
-  const gradeSel = rowEl.querySelector('.grade-select');
-  const ph = document.createElement('option');
-  ph.value = '';
-  ph.textContent = '–';
-  gradeSel.appendChild(ph);
-  for (const g of GRADES) {
-    const opt = document.createElement('option');
-    opt.value = g;
-    opt.textContent = g;
-    gradeSel.appendChild(opt);
-  }
-
   const row = state.rows[semId][index];
   const modInput = rowEl.querySelector('.module-input');
   const credInput = rowEl.querySelector('.credits-input');
   const suCheck = rowEl.querySelector('.su-check');
 
+  setupGradeDropdown(rowEl, () => {
+    recalc();
+    saveState();
+  });
+
   // example code only on the first row of each semester
   if (index > 0) modInput.placeholder = '';
 
   modInput.value = row.m;
-  gradeSel.value = row.g;
   credInput.value = row.c ?? '';
   suCheck.checked = row.su;
 
@@ -195,12 +313,6 @@ function createRowEl(semId, index) {
     updateTitleHint(rowEl, true);
   });
   modInput.addEventListener('keydown', autocompleteKeydown);
-
-  gradeSel.addEventListener('change', () => {
-    getRow(rowEl).g = gradeSel.value;
-    recalc();
-    saveState();
-  });
 
   credInput.addEventListener('input', () => {
     const v = Number.parseFloat(credInput.value);
@@ -394,7 +506,7 @@ function selectModule(i) {
   hideAutocomplete();
   recalc();
   saveState();
-  rowEl.querySelector('.grade-select').focus();
+  rowEl.querySelector('.grade-trigger').focus();
 }
 
 // ---------- GPA calculation (Excel "Backend" sheet logic) ----------
@@ -403,6 +515,15 @@ function classification(gpa) {
   if (gpa >= 4.5) return 'Honours (Highest Distinction)';
   if (gpa >= 4.0) return 'Honours (Distinction)';
   if (gpa >= 3.5) return 'Honours (Merit)';
+  if (gpa >= 3.0) return 'Honours';
+  return 'Pass';
+}
+
+// Compact label for the floating island (limited width).
+function shortClass(gpa) {
+  if (gpa >= 4.5) return 'Highest Dist.';
+  if (gpa >= 4.0) return 'Distinction';
+  if (gpa >= 3.5) return 'Merit';
   if (gpa >= 3.0) return 'Honours';
   return 'Pass';
 }
@@ -474,18 +595,55 @@ function recalc() {
     const gpa = totalQp / totalCredits;
     cumEl.textContent = gpa.toFixed(2);
     classEl.textContent = classification(gpa);
+    hasGpa = true;
+    islandGpaEl.textContent = gpa.toFixed(2);
+    islandClassEl.textContent = shortClass(gpa);
   } else {
     cumEl.textContent = '–';
     classEl.textContent = '';
+    hasGpa = false;
+    islandGpaEl.textContent = '–';
+    islandClassEl.textContent = '';
   }
   document.getElementById('stat-total').textContent = fmtMc(earnedMcs);
   document.getElementById('stat-su').textContent = fmtMc(suCredits);
   const left = Math.max(0, GRADUATION_MCS - earnedMcs);
   document.getElementById('stat-total-label').textContent =
     left > 0 ? `Total MCs · ${fmtMc(left)} to graduation` : 'Total MCs · requirement met';
-  document.getElementById('mc-progress-fill').style.width =
-    `${Math.min(100, (earnedMcs / GRADUATION_MCS) * 100)}%`;
+  const mcPct = Math.min(100, (earnedMcs / GRADUATION_MCS) * 100);
+  document.getElementById('mc-progress-fill').style.width = `${mcPct}%`;
+  islandMcEl.textContent = `${fmtMc(earnedMcs)} / ${GRADUATION_MCS} MC`;
+  islandFillEl.style.width = `${mcPct}%`;
+  updateIslandVisibility();
 }
+
+// ---------- Dynamic island (floating GPA badge) ----------
+
+const islandEl = document.getElementById('gpa-island');
+const islandGpaEl = document.getElementById('island-gpa');
+const islandClassEl = document.getElementById('island-class');
+const islandMcEl = document.getElementById('island-mc');
+const islandFillEl = document.getElementById('island-progress-fill');
+let hasGpa = false;
+let summaryVisible = true; // updated by the IntersectionObserver below
+
+// The island appears only once you've scrolled the main summary out of
+// view and there's actually a GPA to show.
+function updateIslandVisibility() {
+  const show = hasGpa && !summaryVisible;
+  islandEl.classList.toggle('visible', show);
+  islandEl.hidden = false;
+  islandEl.setAttribute('aria-hidden', show ? 'false' : 'true');
+}
+
+islandEl.addEventListener('click', () => {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+new IntersectionObserver((entries) => {
+  summaryVisible = entries[0].isIntersecting;
+  updateIslandVisibility();
+}, { rootMargin: '-8px 0px 0px 0px' }).observe(document.querySelector('.summary'));
 
 function fmtMc(n) {
   return Number.isInteger(n) ? String(n) : n.toFixed(1);
@@ -495,6 +653,7 @@ function fmtMc(n) {
 
 document.getElementById('reset-btn').addEventListener('click', () => {
   if (!confirm('Clear all modules and grades?')) return;
+  closeGradeMenu();
   localStorage.removeItem(STORAGE_KEY);
   state = defaultState();
   document.getElementById('years').textContent = '';
