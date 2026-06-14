@@ -4,7 +4,9 @@ A clean, single-page NUS GPA / CAP calculator deployed on **Cloudflare Workers**
 Type a module code and its modular credits (MCs) and S/U eligibility are filled
 in automatically from [NUSMods](https://api.nusmods.com/v2/) data. Credits stay
 editable, and the S/U toggle is greyed out for modules that do not offer the
-S/U option.
+S/U option. It tracks a full degree — a configurable 4-to-8-year grid, the
+160-MC graduation requirement, and your honours classification — and everything
+persists in the browser.
 
 ## How GPA is calculated
 
@@ -16,13 +18,60 @@ Same logic as the original Excel workbook:
 
 - Quality points = grade points × MCs
 - A module marked **S/U** is excluded from GPA entirely (numerator *and*
-  denominator). The app shows whether it would convert to an **S** (C or
-  better) or a **U**.
+  denominator). The app shows whether it would convert to an **S** (D or
+  better, credits count toward the degree) or a **U** (below a D, no credits).
+- The **CS / CU** (Completed Satisfactory / Unsatisfactory) grades are a
+  pass/fail basis, also excluded from GPA: **CS** earns credits toward the
+  degree, **CU** earns none.
+- **S/U is capped at 32 MCs** — once 32 MCs are marked S/U, further toggles are
+  disabled and the "MCs S/U'd" indicator (`X / 32`) turns red. Raising a module's
+  credits past the remaining budget turns its S/U back off automatically.
 - Semester GPA = Σ quality points ÷ Σ counted MCs; cumulative GPA is the same
-  sum across all eight semesters.
+  sum across every semester in the grid (a 4-year / 8-semester programme by
+  default, expandable up to 8 years).
 - One deliberate difference from the spreadsheet: a row only counts once a
   letter grade is selected (the sheet treated a graded-but-empty cell as 0
   points).
+
+### Graduation & honours classification
+
+The summary tracks progress toward the **160-MC** graduation requirement with a
+progress bar, and shows the honours class for the current cumulative GPA:
+
+| Cumulative GPA | Classification                  |
+|----------------|---------------------------------|
+| ≥ 4.50         | Honours (Highest Distinction)   |
+| ≥ 4.00         | Honours (Distinction)           |
+| ≥ 3.50         | Honours (Merit)                 |
+| ≥ 3.00         | Honours                         |
+| ≥ 2.00         | Pass                            |
+
+A cumulative GPA below **2.00** is not a passing class: the app flags it as *not
+eligible to graduate*, turns the summary and floating island red, and shows a
+warning banner. (Threshold per the
+[NUS continuation & graduation requirements](https://nus.edu.sg/registrar/academic-information-policies/undergraduate-students/continuation-and-graduation-requirements).)
+
+## Features
+
+- **Configurable degree length** — a 4-year (8-semester) grid by default, with
+  *Add year* / *Remove year* up to 8 years; each semester card shows its own GPA
+  and counted MCs.
+- **Module autocomplete** — search by code prefix or (from 3 characters) by
+  title, keyboard-navigable, with MC and S/U badges. Selecting a module fills its
+  MCs (still editable) and enables or disables the S/U toggle accordingly.
+- **Manual MCs** — set credits by hand for modules not in NUSMods.
+- **Custom grade dropdown** — A+ … F, the CS/CU pass/fail grades, and a "no
+  grade" option, driven by mouse or keyboard.
+- **S/U handling** — toggle a module to S/U (excluded from GPA, shown as S or U)
+  with a hard 32-MC cap; the toggle greys out when the cap is reached or the
+  module disallows S/U.
+- **Live summary + floating island** — cumulative GPA, honours classification,
+  the 160-MC graduation progress bar, and total MCs S/U'd, mirrored in a floating
+  island once the summary scrolls off-screen.
+- **Dark / light theme** — follows your OS preference until you toggle it, then
+  remembers your choice (no flash on load).
+- **Persistence & reset** — your entries are saved to `localStorage` and restored
+  on reload; *Reset all* clears back to an empty grid.
 
 ## NUSMods data — fetched once per day, globally
 

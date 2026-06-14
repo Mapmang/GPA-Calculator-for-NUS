@@ -16,6 +16,31 @@
   --shadow: 0 1px 2px rgba(16, 30, 54, 0.05), 0 4px 14px rgba(16, 30, 54, 0.06);
 }
 
+/* Dark theme — overrides the palette variables; component rules below all
+   reference these vars, so nothing else needs to change. */
+[data-theme="dark"] {
+  --blue: #5b9bd5;
+  --blue-dark: #1c3454;
+  --bg: #0f1620;
+  --card: #18212e;
+  --border: #2a3645;
+  --text: #e6ebf2;
+  --muted: #9aa7b8;
+  --green: #46c07f;
+  --red: #e26d6d;
+  --hover-blue: #1d2a3a;
+  --hover-red: #3a2326;
+  --switch-off: #3a4656;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+/* lighter caret for the grade dropdown on dark backgrounds */
+[data-theme="dark"] .grade-trigger::after {
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5l5-5' fill='none' stroke='%239aa7b8' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center / contain;
+}
+
+[data-theme="dark"] .ac-badge.su { background: #3a2c19; }
+
 * { box-sizing: border-box; }
 
 body {
@@ -25,6 +50,7 @@ body {
   color: var(--text);
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.2s, color 0.2s;
 }
 
 .page {
@@ -36,24 +62,97 @@ body {
 /* ---------- Header ---------- */
 
 .header {
+  position: relative;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 20px;
+  padding-bottom: 18px;
+  margin-bottom: 22px;
 }
+
+/* gradient hairline under the whole header */
+.header::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--blue), var(--orange));
+  opacity: 0.85;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.brand-badge {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  color: #fff;
+  background: linear-gradient(135deg, var(--blue), var(--orange));
+  box-shadow: var(--shadow);
+}
+
+.brand-text { min-width: 0; }
 
 .header h1 {
   margin: 0;
-  font-size: 26px;
+  font-size: 30px;
+  font-weight: 750;
   letter-spacing: -0.02em;
-  color: var(--blue);
+  line-height: 1.1;
+  color: var(--blue); /* fallback if background-clip:text is unsupported */
+  background: linear-gradient(90deg, var(--blue), var(--orange));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .tagline {
   margin: 4px 0 0;
   color: var(--muted);
   font-size: 14px;
+}
+
+.feature-chips {
+  list-style: none;
+  margin: 9px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.feature-chips li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+.feature-chips li::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--orange);
 }
 
 .ghost-btn {
@@ -73,6 +172,18 @@ body {
   color: var(--red);
 }
 
+.header-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* the theme toggle reuses the ghost button but hovers blue, not red */
+.theme-btn:hover {
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
 /* ---------- Summary ---------- */
 
 .summary {
@@ -86,6 +197,31 @@ body {
   border-radius: var(--radius);
   padding: 22px 28px;
   box-shadow: var(--shadow);
+}
+
+/* GPA below the 2.00 graduation minimum — the whole box turns red. */
+.summary.danger {
+  background: linear-gradient(120deg, #b3261e 0%, #7f1410 100%);
+}
+
+.summary.danger .summary-class { color: #ffd9d2; }
+
+.summary-warning {
+  flex-basis: 100%;
+  margin: 4px 0 0;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.18);
+  font-size: 13px;
+  line-height: 1.5;
+  color: #fff;
+}
+
+.summary-warning strong { display: inline; }
+
+.summary-warning a {
+  color: #ffd9d2;
+  text-decoration: underline;
 }
 
 .summary-label {
@@ -147,6 +283,30 @@ body {
   border-radius: 3px;
   background: var(--orange);
   transition: width 0.25s;
+}
+
+/* the S/U budget gauge is smaller than the Total-MCs one */
+#su-stat .mc-progress {
+  width: 84px;
+  height: 5px;
+}
+
+/* S/U budget reached (32 MCs) — turn the stat and its bar red */
+#su-stat.at-cap .stat-value { color: #ffd9d2; }
+#su-stat.at-cap .mc-progress-fill.su { background: #ff8a7a; }
+
+#su-stat.flash {
+  animation: su-flash 0.45s ease;
+  border-radius: 10px;
+}
+
+@keyframes su-flash {
+  0%, 100% { background: transparent; }
+  30% { background: rgba(255, 255, 255, 0.22); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #su-stat.flash { animation: none; }
 }
 
 /* ---------- Data status ---------- */
@@ -357,14 +517,16 @@ body {
 }
 
 .module-title {
+  grid-column: 1 / -1; /* span the full row, using the space under grade/MC */
   font-size: 11px;
   color: var(--muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  padding: 2px 2px 0;
-  min-height: 14px;
+  overflow-wrap: anywhere;
+  padding: 0 2px;
+  margin-top: -5px; /* pull up tight under the input (offsets the row gap) */
+  line-height: 1.3;
 }
+
+.module-title:empty { display: none; } /* collapse the row when no title */
 
 .credits-input { text-align: center; }
 .credits-input::-webkit-outer-spin-button,
@@ -485,6 +647,63 @@ body {
   background: var(--hover-blue);
 }
 
+/* ---------- Year controls (add / remove a whole year) ---------- */
+
+.year-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin: 22px 0 0;
+}
+
+.add-year-btn {
+  border: 1px dashed var(--border);
+  background: none;
+  color: var(--blue);
+  border-radius: 8px;
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+/* full-width box: spans both semester columns (plus the grid gap between them).
+   Solid card-coloured box — white in light mode, navy in dark mode. */
+#add-year-btn {
+  width: 100%;
+  padding: 15px;
+  font-size: 14.5px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+
+#add-year-btn:hover:not(:disabled) {
+  border-color: var(--blue);
+  background: var(--card);
+}
+
+.add-year-btn:hover:not(:disabled) {
+  border-color: var(--blue);
+  background: var(--hover-blue);
+}
+
+.remove-year-btn { color: var(--muted); }
+
+.remove-year-btn:hover:not(:disabled) {
+  border-color: var(--red);
+  color: var(--red);
+  background: var(--hover-red);
+}
+
+.add-year-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 /* ---------- Autocomplete ---------- */
 
 .autocomplete {
@@ -571,6 +790,13 @@ body {
   transform: translate(0, -50%);
   pointer-events: auto;
 }
+
+/* mirrors the summary box: red when below the 2.00 graduation minimum */
+.gpa-island.danger {
+  background: rgba(150, 22, 16, 0.92);
+}
+
+.gpa-island.danger .island-class { color: #ffd9d2; }
 
 .gpa-island:hover {
   transform: translate(0, -50%) scale(1.04);
@@ -676,12 +902,12 @@ body {
 }
 
 /* On narrow screens the side island would crowd the content, so it
-   docks as a compact horizontal pill along the bottom edge instead. */
+   docks as a compact horizontal pill along the top edge instead. */
 @media (max-width: 620px) {
   .gpa-island {
     right: 50%;
-    top: auto;
-    bottom: 14px;
+    top: 14px;
+    bottom: auto;
     flex-direction: row;
     align-items: center;
     gap: 8px;
@@ -689,7 +915,7 @@ body {
     max-width: calc(100vw - 28px);
     padding: 8px 16px;
     border-radius: 18px;
-    transform: translate(50%, 24px);
+    transform: translate(50%, -24px);
   }
   .gpa-island.visible { transform: translate(50%, 0); }
   .gpa-island:hover { transform: translate(50%, 0) scale(1.03); }
@@ -708,6 +934,22 @@ body {
 
 @media (max-width: 480px) {
   .sem-rows-head,
-  .row { grid-template-columns: minmax(0, 1fr) 72px 48px 58px 24px; gap: 5px; }
+  .row { grid-template-columns: minmax(0, 1fr) 48px 40px 46px 20px; gap: 4px; }
   .page { padding: 18px 12px 40px; }
+  .header { flex-wrap: wrap; }
+  .header h1 { font-size: 25px; }
+  .brand-badge { width: 42px; height: 42px; }
+
+  /* tighten the row controls so the module name keeps a readable width */
+  .module-input,
+  .credits-input,
+  .grade-trigger { font-size: 13px; }
+  .grade-trigger { padding: 0 6px; }
+  .credits-input { padding: 7px 4px; }
+
+  /* smaller S/U switch to free up column width */
+  .su-switch { width: 34px; height: 20px; border-radius: 10px; }
+  .su-switch::after { width: 16px; height: 16px; }
+  .su-check:checked + .su-switch::after { left: 16px; }
+  .su-result { left: calc(50% + 18px); font-size: 10px; }
 }

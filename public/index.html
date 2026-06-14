@@ -7,15 +7,45 @@
   <meta name="description" content="NUS GPA / CAP calculator with S/U planning. Module credits auto-filled from NUSMods data.">
   <link rel="stylesheet" href="/styles.css">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80'%3E%F0%9F%8E%93%3C/text%3E%3C/svg%3E">
+  <script>
+    // Set the theme before first paint to avoid a flash of the wrong colours.
+    (function () {
+      try {
+        var t = localStorage.getItem('nus-gpa-theme');
+        if (t !== 'dark' && t !== 'light') {
+          t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        document.documentElement.dataset.theme = t;
+      } catch (e) {}
+    })();
+  </script>
 </head>
 <body>
   <div class="page">
     <header class="header">
-      <div>
-        <h1>NUS GPA Calculator</h1>
-        <p class="tagline">Type a module code &mdash; credits and S/U eligibility fill in automatically.</p>
+      <div class="brand">
+        <span class="brand-badge" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="none">
+            <path d="M12 3 1.5 8 12 13 22.5 8 12 3Z" fill="currentColor"/>
+            <path d="M6 10.2v4.3c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5v-4.3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M22.5 8v4.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            <circle cx="22.5" cy="13.3" r="1.1" fill="currentColor"/>
+          </svg>
+        </span>
+        <div class="brand-text">
+          <h1>NUS GPA Calculator</h1>
+          <p class="tagline">Plan your GPA, S/U, and honours classification.</p>
+          <ul class="feature-chips">
+            <li>Auto-filled MCs</li>
+            <li>S/U planning</li>
+            <li>Honours class</li>
+          </ul>
+        </div>
       </div>
-      <button id="reset-btn" class="ghost-btn" type="button">Reset all</button>
+      <div class="header-actions">
+        <button id="theme-btn" class="ghost-btn theme-btn" type="button" aria-label="Toggle dark mode" aria-pressed="false">Dark mode</button>
+        <button id="reset-btn" class="ghost-btn" type="button">Reset all</button>
+      </div>
     </header>
 
     <section class="summary" aria-live="polite">
@@ -30,23 +60,34 @@
           <div class="mc-progress"><div class="mc-progress-fill" id="mc-progress-fill"></div></div>
           <div class="stat-label" id="stat-total-label">Total MCs</div>
         </div>
-        <div class="stat">
-          <div class="stat-value" id="stat-su">0</div>
+        <div class="stat" id="su-stat">
+          <div class="stat-value"><span id="stat-su">0</span><span class="stat-total-goal"> / 32</span></div>
+          <div class="mc-progress"><div class="mc-progress-fill su" id="su-progress-fill"></div></div>
           <div class="stat-label">MCs S/U&rsquo;d</div>
         </div>
       </div>
+      <p class="summary-warning" id="grad-warning" role="alert" hidden>
+        <strong>&#9888; GPA below 2.00 &mdash; not eligible to graduate.</strong>
+        NUS requires a minimum cumulative GPA of 2.00 to graduate; below this you are placed on academic probation.
+        <a href="https://nus.edu.sg/registrar/academic-information-policies/undergraduate-students/continuation-and-graduation-requirements" target="_blank" rel="noopener">See the official requirements.</a>
+      </p>
     </section>
 
     <p class="data-status" id="data-status">Loading module data&hellip;</p>
 
     <main id="years"></main>
 
+    <div class="year-controls">
+      <button id="add-year-btn" class="add-year-btn" type="button">+ Add year</button>
+      <button id="remove-year-btn" class="add-year-btn remove-year-btn" type="button">&minus; Remove year</button>
+    </div>
+
     <footer class="footer">
       <p>
         Module data from the <a href="https://api.nusmods.com/v2/" target="_blank" rel="noopener">NUSMods API</a>,
         refreshed once daily at 6:00&nbsp;AM Singapore time.
         Grading: A+/A&nbsp;=&nbsp;5.0 &middot; A&minus;&nbsp;=&nbsp;4.5 &middot; &hellip; &middot; F&nbsp;=&nbsp;0.
-        S/U&rsquo;d modules are excluded from GPA.
+        S/U&rsquo;d modules are excluded from GPA, as are CS/CU (pass/fail) modules &mdash; CS earns credits, CU does not.
       </p>
       <p>Unofficial tool &mdash; not affiliated with NUS. Verify results against your official transcript.</p>
       <p class="footer-source">
@@ -89,7 +130,6 @@
       <div class="module-cell">
         <input class="module-input" type="text" autocomplete="off" autocapitalize="characters"
                spellcheck="false" placeholder="e.g. CS1010E">
-        <div class="module-title"></div>
       </div>
       <div class="grade-dd">
         <button class="grade-trigger" type="button" title="Letter grade" aria-haspopup="listbox" aria-expanded="false">
@@ -105,6 +145,7 @@
         <span class="su-result"></span>
       </div>
       <button class="remove-btn" type="button" title="Remove module">&times;</button>
+      <div class="module-title"></div>
     </div>
   </template>
 
