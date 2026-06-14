@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "nus-gpa-calculator",
+  "name": "gpa-calculator-for-nus",
   "main": "src/worker.js",
   "compatibility_date": "2026-05-01",
 
